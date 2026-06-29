@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, effect, inject } from '@angular/core';
+import { Router, RouterOutlet } from '@angular/router';
+import { SessionService } from './core/session/session.service';
 import { ToastHostComponent } from './shared/toast/toast.component';
 
 @Component({
@@ -11,4 +12,15 @@ import { ToastHostComponent } from './shared/toast/toast.component';
     <app-toast-host />
   `,
 })
-export class AppComponent {}
+export class AppComponent {
+  private readonly session = inject(SessionService);
+  private readonly router = inject(Router);
+
+  constructor() {
+    effect(() => {
+      if (!this.session.isAuthenticated() && !this.router.url.startsWith('/login')) {
+        this.router.navigate(['/login']);
+      }
+    });
+  }
+}
