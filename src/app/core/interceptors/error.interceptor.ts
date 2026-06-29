@@ -2,12 +2,15 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { ToastService } from '../../shared/toast/toast.service';
+import { SKIP_ERROR_TOAST } from './http-context';
 
 export const errorInterceptor: HttpInterceptorFn = (request, next) => {
   const toast = inject(ToastService);
   return next(request).pipe(
     catchError((error: HttpErrorResponse) => {
-      toast.error(messageFor(error));
+      if (!request.context.get(SKIP_ERROR_TOAST)) {
+        toast.error(messageFor(error));
+      }
       return throwError(() => error);
     }),
   );

@@ -5,6 +5,7 @@ import { LoginComponent } from './features/auth/login.component';
 import { PlaceholderComponent } from './shared/ui/placeholder.component';
 import { WalletsPageComponent } from './features/agent/wallets-page.component';
 import { DashboardPageComponent } from './features/client/dashboard-page.component';
+import { TransferPageComponent } from './features/client/transfer-page.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -26,9 +27,8 @@ export const routes: Routes = [
       },
       {
         path: 'transfer',
-        component: PlaceholderComponent,
+        component: TransferPageComponent,
         canActivate: [roleGuard('client')],
-        data: { title: 'Transfert', icon: 'transfer', description: "Envoyez de l'argent à un autre portefeuille." },
       },
       {
         path: 'bills',
