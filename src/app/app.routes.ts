@@ -3,6 +3,7 @@ import { authGuard, roleGuard } from './core/guards/role.guard';
 import { ShellComponent } from './layout/shell.component';
 import { LoginComponent } from './features/auth/login.component';
 import { PlaceholderComponent } from './shared/ui/placeholder.component';
+import { WalletsPageComponent } from './features/agent/wallets-page.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -48,9 +49,8 @@ export const routes: Routes = [
       },
       {
         path: 'admin/wallets',
-        component: PlaceholderComponent,
+        component: WalletsPageComponent,
         canActivate: [roleGuard('agent')],
-        data: { title: 'Portefeuilles', icon: 'wallet', description: 'Listing, création, recherche et opérations.' },
       },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
