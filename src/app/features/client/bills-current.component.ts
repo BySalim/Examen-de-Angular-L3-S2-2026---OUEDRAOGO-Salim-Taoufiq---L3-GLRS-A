@@ -4,6 +4,7 @@ import { BillingApiService } from '../../core/api/billing-api.service';
 import { WalletApiService } from '../../core/api/wallet-api.service';
 import { SessionService } from '../../core/session/session.service';
 import { BalanceStore } from '../../core/state/balance.store';
+import { ConfirmService } from '../../core/confirm/confirm.service';
 import { ToastService } from '../../shared/toast/toast.service';
 import { Facture } from '../../core/models/facture.model';
 import { IconComponent } from '../../shared/ui/icon.component';
@@ -71,6 +72,7 @@ export class BillsCurrentComponent {
   private readonly wallet = inject(WalletApiService);
   private readonly session = inject(SessionService);
   private readonly balance = inject(BalanceStore);
+  private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
 
   protected readonly factures = signal<Facture[]>([]);
@@ -133,10 +135,18 @@ export class BillsCurrentComponent {
       : 'bg-amber-500/10 text-amber-600 dark:text-amber-400';
   }
 
-  protected pay(): void {
+  protected async pay(): Promise<void> {
     const phone = this.session.phone();
     const references = [...this.selected()];
     if (!phone || references.length === 0) {
+      return;
+    }
+    const confirmed = await this.confirm.ask({
+      title: 'Confirmer le paiement',
+      message: `Régler ${references.length} facture(s) pour un total de ${this.selectedTotal().toLocaleString('fr-FR')} XOF ?`,
+      confirmLabel: 'Payer',
+    });
+    if (!confirmed) {
       return;
     }
     const chosen = this.factures().filter((f) => references.includes(f.reference));

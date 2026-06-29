@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { WalletApiService } from '../../core/api/wallet-api.service';
+import { ConfirmService } from '../../core/confirm/confirm.service';
 import { ToastService } from '../../shared/toast/toast.service';
 import { Page, Wallet } from '../../core/models/wallet.model';
 import { IconComponent } from '../../shared/ui/icon.component';
@@ -222,6 +223,7 @@ import { PhonePipe } from '../../shared/pipes/phone.pipe';
 export class WalletsPageComponent {
   private readonly api = inject(WalletApiService);
   private readonly toast = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly page = signal<Page<Wallet> | null>(null);
@@ -386,14 +388,24 @@ export class WalletsPageComponent {
     this.withdrawOpen.set(true);
   }
 
-  protected submitWithdraw(): void {
+  protected async submitWithdraw(): Promise<void> {
     const wallet = this.selected();
     if (!wallet || this.withdrawForm.invalid) {
       this.withdrawForm.markAllAsTouched();
       return;
     }
+    const amount = this.withdrawForm.getRawValue().amount as number;
+    const confirmed = await this.confirm.ask({
+      title: 'Confirmer le retrait',
+      message: `Débiter ${amount.toLocaleString('fr-FR')} XOF du compte ${wallet.phoneNumber} ?`,
+      confirmLabel: 'Débiter',
+      danger: true,
+    });
+    if (!confirmed) {
+      return;
+    }
     this.submitting.set(true);
-    this.api.withdraw({ phoneNumber: wallet.phoneNumber, amount: this.withdrawForm.getRawValue().amount as number }).subscribe({
+    this.api.withdraw({ phoneNumber: wallet.phoneNumber, amount }).subscribe({
       next: (result) => {
         this.toast.success(`Retrait effectué (frais ${result.fee} XOF).`);
         this.submitting.set(false);
