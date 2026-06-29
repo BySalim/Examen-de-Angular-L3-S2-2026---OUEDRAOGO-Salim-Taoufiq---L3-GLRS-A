@@ -4,6 +4,7 @@ import { ShellComponent } from './layout/shell.component';
 import { LoginComponent } from './features/auth/login.component';
 import { PlaceholderComponent } from './shared/ui/placeholder.component';
 import { WalletsPageComponent } from './features/agent/wallets-page.component';
+import { DashboardPageComponent } from './features/client/dashboard-page.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -14,9 +15,8 @@ export const routes: Routes = [
     children: [
       {
         path: 'dashboard',
-        component: PlaceholderComponent,
+        component: DashboardPageComponent,
         canActivate: [roleGuard('client')],
-        data: { title: 'Tableau de bord', icon: 'dashboard', description: 'Solde, dépenses et raccourcis.' },
       },
       {
         path: 'transactions',
