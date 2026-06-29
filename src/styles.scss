@@ -83,6 +83,19 @@
     @apply btn text-content-muted hover:bg-surface-2 hover:text-content;
   }
 
+  .btn-danger {
+    @apply btn text-white shadow-soft;
+    background-image: linear-gradient(135deg, rgb(var(--k-danger)), rgb(var(--k-danger) / 0.82));
+  }
+
+  .btn-danger:hover {
+    filter: brightness(1.05);
+  }
+
+  .btn-danger:active {
+    filter: brightness(0.96);
+  }
+
   .label {
     @apply mb-1.5 block text-sm font-medium text-content;
   }

@@ -61,9 +61,17 @@ type TypeFilter = 'ALL' | TransactionType;
               <tr class="border-b border-hairline text-left text-xs uppercase tracking-wide text-content-subtle">
                 <th class="px-4 py-3 font-semibold">Type</th>
                 <th class="px-4 py-3 font-semibold">Détail</th>
-                <th class="px-4 py-3 text-right font-semibold">Montant</th>
+                <th class="px-4 py-3 text-right font-semibold">
+                  <button type="button" class="ml-auto flex items-center gap-1.5 uppercase tracking-wide transition-colors hover:text-content" (click)="toggleSort('amount')">
+                    Montant <app-icon [name]="sortIcon('amount')" [size]="14" [class.text-primary]="sort()?.field === 'amount'" [class.text-content-subtle]="sort()?.field !== 'amount'" />
+                  </button>
+                </th>
                 <th class="px-4 py-3 text-right font-semibold">Solde après</th>
-                <th class="px-4 py-3 text-right font-semibold">Date</th>
+                <th class="px-4 py-3 text-right font-semibold">
+                  <button type="button" class="ml-auto flex items-center gap-1.5 uppercase tracking-wide transition-colors hover:text-content" (click)="toggleSort('createdAt')">
+                    Date <app-icon [name]="sortIcon('createdAt')" [size]="14" [class.text-primary]="sort()?.field === 'createdAt'" [class.text-content-subtle]="sort()?.field !== 'createdAt'" />
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -111,6 +119,7 @@ export class TransactionsPageComponent {
   protected readonly dateFrom = signal('');
   protected readonly dateTo = signal('');
   protected readonly pageIndex = signal(0);
+  protected readonly sort = signal<{ field: 'amount' | 'createdAt'; dir: 'asc' | 'desc' } | null>(null);
   protected readonly pageSize = 10;
   protected readonly skeletonRows = Array.from({ length: 8 });
 
@@ -141,9 +150,24 @@ export class TransactionsPageComponent {
     });
   });
 
+  protected readonly sorted = computed(() => {
+    const sort = this.sort();
+    const list = this.filtered();
+    if (!sort) {
+      return list;
+    }
+    const factor = sort.dir === 'asc' ? 1 : -1;
+    return [...list].sort((a, b) => {
+      if (sort.field === 'amount') {
+        return (a.amount - b.amount) * factor;
+      }
+      return a.createdAt.localeCompare(b.createdAt) * factor;
+    });
+  });
+
   protected readonly paged = computed(() => {
     const start = this.pageIndex() * this.pageSize;
-    return this.filtered().slice(start, start + this.pageSize);
+    return this.sorted().slice(start, start + this.pageSize);
   });
 
   constructor() {
@@ -180,6 +204,24 @@ export class TransactionsPageComponent {
     this.dateFrom.set('');
     this.dateTo.set('');
     this.pageIndex.set(0);
+  }
+
+  protected toggleSort(field: 'amount' | 'createdAt'): void {
+    const current = this.sort();
+    if (current?.field === field) {
+      this.sort.set({ field, dir: current.dir === 'asc' ? 'desc' : 'asc' });
+    } else {
+      this.sort.set({ field, dir: 'desc' });
+    }
+    this.pageIndex.set(0);
+  }
+
+  protected sortIcon(field: 'amount' | 'createdAt'): string {
+    const current = this.sort();
+    if (current?.field !== field) {
+      return 'chevrons-up-down';
+    }
+    return current.dir === 'asc' ? 'chevron-up' : 'chevron-down';
   }
 
   protected typeLabel(tx: Transaction): string {

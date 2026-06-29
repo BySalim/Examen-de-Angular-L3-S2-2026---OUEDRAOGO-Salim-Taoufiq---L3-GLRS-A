@@ -20,8 +20,11 @@ export class WalletApiService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/wallets';
 
-  list(page: number, size: number): Observable<Page<Wallet>> {
-    const params = new HttpParams().set('page', page).set('size', size);
+  list(page: number, size: number, sort?: string): Observable<Page<Wallet>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (sort) {
+      params = params.set('sort', sort);
+    }
     return this.http.get<Page<Wallet>>(this.base, { params });
   }
 

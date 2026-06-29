@@ -46,6 +46,13 @@ src/app/
 - **Guards** : routes protégées par rôle.
 - Design system maison (Tailwind CSS), thème clair/sombre.
 
+### Fonctionnalités complémentaires
+
+- **Tableau de bord** : donut revenus/dépenses et graphique de flux mensuel (entrées/sorties sur les six derniers mois), en SVG.
+- **Session** : expiration active du token avec déconnexion automatique et redirection vers la connexion.
+- **Tri des colonnes** : tri serveur (paramètre `sort` de la pagination Spring) sur les portefeuilles, tri client sur les transactions.
+- **Confirmation** : boîte de dialogue avant les actions sensibles (retrait, paiement, déconnexion).
+
 ## Organisation Git
 
 - `main` : version stable et livrable.

@@ -76,6 +76,35 @@ import { PhonePipe } from '../../shared/pipes/phone.pipe';
       </div>
     </div>
 
+    <!-- Flux mensuel -->
+    <div class="card mt-5 p-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p class="text-sm font-semibold text-content">Flux mensuel</p>
+          <p class="text-xs text-content-subtle">Entrées et sorties sur les 6 derniers mois</p>
+        </div>
+        <ul class="flex items-center gap-4 text-xs text-content-muted">
+          <li class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-primary"></span> Entrées</li>
+          <li class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-gold"></span> Sorties</li>
+        </ul>
+      </div>
+      @if (loading()) {
+        <div class="skeleton mt-6 h-44 w-full"></div>
+      } @else {
+        <div class="mt-6 flex h-44 items-end gap-3 sm:gap-5">
+          @for (m of monthly(); track m.key) {
+            <div class="flex h-full flex-1 flex-col items-center gap-2">
+              <div class="flex h-full w-full items-end justify-center gap-1.5">
+                <div class="w-1/3 rounded-t-md bg-primary transition-[height] duration-500" [style.height.%]="barHeight(m.income)" [title]="m.income | xof"></div>
+                <div class="w-1/3 rounded-t-md bg-gold transition-[height] duration-500" [style.height.%]="barHeight(m.expense)" [title]="m.expense | xof"></div>
+              </div>
+              <span class="text-[11px] font-medium capitalize text-content-subtle">{{ m.label }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
     <!-- Activité récente -->
     <div class="card mt-5">
       <div class="flex items-center justify-between border-b border-hairline px-5 py-3.5">
@@ -135,6 +164,35 @@ export class DashboardPageComponent {
   protected readonly expenseLen = computed(() => (this.total() ? (this.circumference * this.expense()) / this.total() : 0));
   protected readonly recent = computed(() => this.transactions().slice(0, 6));
 
+  protected readonly monthly = computed(() => {
+    const now = new Date();
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      return {
+        key: `${date.getFullYear()}-${date.getMonth()}`,
+        label: date.toLocaleDateString('fr-FR', { month: 'short' }),
+        income: 0,
+        expense: 0,
+      };
+    });
+    const byKey = new Map(months.map((month) => [month.key, month]));
+    for (const tx of this.transactions()) {
+      const date = new Date(tx.createdAt);
+      const month = byKey.get(`${date.getFullYear()}-${date.getMonth()}`);
+      if (!month) {
+        continue;
+      }
+      if (tx.direction === 'CREDIT') {
+        month.income += tx.amount;
+      } else {
+        month.expense += tx.amount + tx.fee;
+      }
+    }
+    return months;
+  });
+
+  private readonly monthlyMax = computed(() => Math.max(1, ...this.monthly().flatMap((month) => [month.income, month.expense])));
+
   constructor() {
     const phone = this.session.phone();
     if (phone) {
@@ -172,5 +230,9 @@ export class DashboardPageComponent {
 
   protected iconBg(tx: Transaction): string {
     return tx.direction === 'CREDIT' ? 'bg-success/10 text-success' : 'bg-surface-2 text-content-muted';
+  }
+
+  protected barHeight(value: number): number {
+    return value <= 0 ? 0 : Math.max(4, (value / this.monthlyMax()) * 100);
   }
 }

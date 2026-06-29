@@ -4,6 +4,7 @@ import { SessionService } from '../core/session/session.service';
 import { ThemeService } from '../core/theme/theme.service';
 import { BalanceStore } from '../core/state/balance.store';
 import { LoadingService } from '../core/loading/loading.service';
+import { ConfirmService } from '../core/confirm/confirm.service';
 import { IconComponent } from '../shared/ui/icon.component';
 import { XofPipe } from '../shared/pipes/xof.pipe';
 import { PhonePipe } from '../shared/pipes/phone.pipe';
@@ -119,6 +120,7 @@ export class ShellComponent {
   protected readonly balance = inject(BalanceStore);
   protected readonly loading = inject(LoadingService);
   private readonly session = inject(SessionService);
+  private readonly confirm = inject(ConfirmService);
   private readonly router = inject(Router);
 
   protected readonly drawerOpen = signal(false);
@@ -147,7 +149,15 @@ export class ShellComponent {
     });
   }
 
-  protected logout(): void {
+  protected async logout(): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: 'Se déconnecter',
+      message: 'Voulez-vous vraiment quitter votre session ?',
+      confirmLabel: 'Se déconnecter',
+    });
+    if (!confirmed) {
+      return;
+    }
     this.balance.clear();
     this.session.logout();
     this.router.navigate(['/login']);

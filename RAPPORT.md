@@ -10,7 +10,9 @@
 
 **Sécurité par rôle.** La connexion se fait par identifiants (agent : identifiant/mot de passe ; client : téléphone + PIN). Un **token** (structure JWT avec expiration) est émis, persisté et validé par le `SessionService` ; un **interceptor** l'attache à chaque requête API ; des **guards** d'authentification et de rôle protègent les routes. L'API n'exposant pas d'authentification, la vérification des identifiants est réalisée côté front avec des comptes de démonstration : le mécanisme (token, interceptor, guards, expiration) est complet et fonctionnel.
 
-**Design system.** Un thème maison (« Kóra ») bâti sur Tailwind CSS expose des tokens de couleurs en variables CSS, permettant une bascule clair/sombre instantanée. Les icônes et les graphiques (donut revenus/dépenses) sont réalisés en SVG sans dépendance externe, pour un rendu cohérent et léger.
+**Design system.** Un thème maison (« Kóra ») bâti sur Tailwind CSS expose des tokens de couleurs en variables CSS, permettant une bascule clair/sombre instantanée. Les icônes et les graphiques (donut revenus/dépenses, histogramme de flux mensuel) sont réalisés en SVG sans dépendance externe, pour un rendu cohérent et léger.
+
+**Robustesse et confort d'usage.** La session expire activement : un minuteur aligné sur l'échéance du token ferme la session, redirige vers la connexion et avertit l'utilisateur, sans attendre la prochaine navigation. Les tableaux sont triables — côté serveur pour les portefeuilles (paramètre `sort` de la pagination Spring), côté client pour les transactions. Enfin, une boîte de dialogue de confirmation réutilisable (service exposant une `Promise<boolean>` et un hôte unique au niveau racine) protège les opérations sensibles : retrait, paiement et déconnexion.
 
 ## Difficultés rencontrées
 
