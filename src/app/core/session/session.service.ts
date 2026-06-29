@@ -1,4 +1,5 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { ToastService } from '../../shared/toast/toast.service';
 
 export type Role = 'agent' | 'client';
 
@@ -18,8 +19,10 @@ const SESSION_TTL_MS = 30 * 60 * 1000;
 
 @Injectable({ providedIn: 'root' })
 export class SessionService {
+  private readonly toast = inject(ToastService);
   private readonly storageKey = 'kora-token';
   private readonly token = signal<string | null>(this.restore());
+  private expiryTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly payload = computed<TokenPayload | null>(() => this.decodeValid(this.token()));
 
@@ -29,6 +32,10 @@ export class SessionService {
   readonly code = computed(() => this.payload()?.code ?? null);
   readonly walletId = computed(() => this.payload()?.walletId ?? null);
   readonly name = computed(() => this.payload()?.name ?? null);
+
+  constructor() {
+    this.scheduleExpiry();
+  }
 
   loginAgent(username: string, password: string): boolean {
     if (username.trim() !== AGENT_USERNAME || password !== AGENT_PASSWORD) {
@@ -43,6 +50,7 @@ export class SessionService {
   }
 
   logout(): void {
+    this.clearExpiry();
     this.token.set(null);
     try {
       localStorage.removeItem(this.storageKey);
@@ -67,6 +75,39 @@ export class SessionService {
       localStorage.setItem(this.storageKey, token);
     } catch {
       /* stockage indisponible */
+    }
+    this.scheduleExpiry();
+  }
+
+  private scheduleExpiry(): void {
+    this.clearExpiry();
+    const payload = this.decodeValid(this.token());
+    if (!payload) {
+      return;
+    }
+    const remaining = payload.exp - Date.now();
+    if (remaining <= 0) {
+      this.token.set(null);
+      return;
+    }
+    this.expiryTimer = setTimeout(() => this.expire(), remaining);
+  }
+
+  private expire(): void {
+    this.expiryTimer = null;
+    this.token.set(null);
+    try {
+      localStorage.removeItem(this.storageKey);
+    } catch {
+      /* stockage indisponible */
+    }
+    this.toast.warning('Votre session a expiré, veuillez vous reconnecter.');
+  }
+
+  private clearExpiry(): void {
+    if (this.expiryTimer) {
+      clearTimeout(this.expiryTimer);
+      this.expiryTimer = null;
     }
   }
 
