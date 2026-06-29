@@ -77,10 +77,26 @@ import { PhonePipe } from '../../shared/pipes/phone.pipe';
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-hairline text-left text-xs uppercase tracking-wide text-content-subtle">
-                <th class="px-4 py-3 font-semibold">Code</th>
-                <th class="px-4 py-3 font-semibold">Téléphone</th>
-                <th class="px-4 py-3 font-semibold">Email</th>
-                <th class="px-4 py-3 text-right font-semibold">Solde</th>
+                <th class="px-4 py-3 font-semibold">
+                  <button type="button" class="flex items-center gap-1.5 uppercase tracking-wide transition-colors hover:text-content" (click)="toggleSort('code')">
+                    Code <app-icon [name]="sortIcon('code')" [size]="14" [class.text-primary]="sort()?.field === 'code'" [class.text-content-subtle]="sort()?.field !== 'code'" />
+                  </button>
+                </th>
+                <th class="px-4 py-3 font-semibold">
+                  <button type="button" class="flex items-center gap-1.5 uppercase tracking-wide transition-colors hover:text-content" (click)="toggleSort('phoneNumber')">
+                    Téléphone <app-icon [name]="sortIcon('phoneNumber')" [size]="14" [class.text-primary]="sort()?.field === 'phoneNumber'" [class.text-content-subtle]="sort()?.field !== 'phoneNumber'" />
+                  </button>
+                </th>
+                <th class="px-4 py-3 font-semibold">
+                  <button type="button" class="flex items-center gap-1.5 uppercase tracking-wide transition-colors hover:text-content" (click)="toggleSort('email')">
+                    Email <app-icon [name]="sortIcon('email')" [size]="14" [class.text-primary]="sort()?.field === 'email'" [class.text-content-subtle]="sort()?.field !== 'email'" />
+                  </button>
+                </th>
+                <th class="px-4 py-3 text-right font-semibold">
+                  <button type="button" class="ml-auto flex items-center gap-1.5 uppercase tracking-wide transition-colors hover:text-content" (click)="toggleSort('balance')">
+                    Solde <app-icon [name]="sortIcon('balance')" [size]="14" [class.text-primary]="sort()?.field === 'balance'" [class.text-content-subtle]="sort()?.field !== 'balance'" />
+                  </button>
+                </th>
                 <th class="px-4 py-3 text-right font-semibold">Actions</th>
               </tr>
             </thead>
@@ -219,6 +235,7 @@ export class WalletsPageComponent {
   protected readonly withdrawOpen = signal(false);
 
   protected readonly skeletonRows = Array.from({ length: 6 });
+  protected readonly sort = signal<{ field: string; dir: 'asc' | 'desc' } | null>(null);
   private readonly size = 10;
   private currentPage = 0;
 
@@ -253,13 +270,34 @@ export class WalletsPageComponent {
 
   private load(): void {
     this.loadingList.set(true);
-    this.api.list(this.currentPage, this.size).subscribe({
+    const sort = this.sort();
+    const sortParam = sort ? `${sort.field},${sort.dir}` : undefined;
+    this.api.list(this.currentPage, this.size, sortParam).subscribe({
       next: (result) => {
         this.page.set(result);
         this.loadingList.set(false);
       },
       error: () => this.loadingList.set(false),
     });
+  }
+
+  protected toggleSort(field: string): void {
+    const current = this.sort();
+    if (current?.field === field) {
+      this.sort.set({ field, dir: current.dir === 'asc' ? 'desc' : 'asc' });
+    } else {
+      this.sort.set({ field, dir: 'asc' });
+    }
+    this.currentPage = 0;
+    this.load();
+  }
+
+  protected sortIcon(field: string): string {
+    const current = this.sort();
+    if (current?.field !== field) {
+      return 'chevrons-up-down';
+    }
+    return current.dir === 'asc' ? 'chevron-up' : 'chevron-down';
   }
 
   protected goPrev(): void {
