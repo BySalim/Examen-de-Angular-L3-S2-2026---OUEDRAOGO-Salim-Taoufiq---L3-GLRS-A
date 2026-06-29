@@ -4,6 +4,7 @@ import { WalletApiService } from '../../core/api/wallet-api.service';
 import { SessionService } from '../../core/session/session.service';
 import { Transaction, TransactionType } from '../../core/models/transaction.model';
 import { IconComponent } from '../../shared/ui/icon.component';
+import { PaginationComponent } from '../../shared/ui/pagination.component';
 import { XofPipe } from '../../shared/pipes/xof.pipe';
 import { PhonePipe } from '../../shared/pipes/phone.pipe';
 
@@ -12,7 +13,7 @@ type TypeFilter = 'ALL' | TransactionType;
 @Component({
   selector: 'app-transactions-page',
   standalone: true,
-  imports: [DatePipe, IconComponent, XofPipe, PhonePipe],
+  imports: [DatePipe, IconComponent, PaginationComponent, XofPipe, PhonePipe],
   template: `
     <header class="mb-6">
       <h1 class="text-xl font-semibold tracking-tight text-content">Transactions</h1>
@@ -25,17 +26,17 @@ type TypeFilter = 'ALL' | TransactionType;
           @for (t of typeFilters; track t.value) {
             <button type="button" class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
               [class]="typeFilter() === t.value ? 'bg-surface text-content shadow-soft' : 'text-content-muted'"
-              (click)="typeFilter.set(t.value)">{{ t.label }}</button>
+              (click)="setType(t.value)">{{ t.label }}</button>
           }
         </div>
         <div class="flex items-end gap-2">
           <div>
             <label class="label">Du</label>
-            <input type="date" class="input" [value]="dateFrom()" (change)="dateFrom.set($any($event.target).value)" />
+            <input type="date" class="input" [value]="dateFrom()" (change)="setDateFrom($any($event.target).value)" />
           </div>
           <div>
             <label class="label">Au</label>
-            <input type="date" class="input" [value]="dateTo()" (change)="dateTo.set($any($event.target).value)" />
+            <input type="date" class="input" [value]="dateTo()" (change)="setDateTo($any($event.target).value)" />
           </div>
           @if (dateFrom() || dateTo() || typeFilter() !== 'ALL') {
             <button type="button" class="btn-ghost" (click)="reset()">Réinitialiser</button>
@@ -62,7 +63,7 @@ type TypeFilter = 'ALL' | TransactionType;
                 <tr class="border-b border-hairline last:border-0"><td colspan="5" class="px-4 py-3"><div class="skeleton h-5 w-full"></div></td></tr>
               }
             } @else {
-              @for (tx of filtered(); track tx.id) {
+              @for (tx of paged(); track tx.id) {
                 <tr class="border-b border-hairline transition-colors last:border-0 hover:bg-surface-2/60">
                   <td class="px-4 py-3">
                     <span class="chip" [class]="typeClass(tx.type)"><app-icon [name]="iconName(tx.type)" [size]="14" /> {{ typeLabel(tx) }}</span>
@@ -85,7 +86,7 @@ type TypeFilter = 'ALL' | TransactionType;
           </tbody>
         </table>
       </div>
-      <div class="border-t border-hairline px-4 py-3 text-sm text-content-subtle">{{ filtered().length }} transaction(s)</div>
+      <app-pagination [length]="filtered().length" [index]="pageIndex()" [pageSize]="pageSize" (indexChange)="pageIndex.set($event)" />
     </div>
   `,
 })
@@ -98,6 +99,8 @@ export class TransactionsPageComponent {
   protected readonly typeFilter = signal<TypeFilter>('ALL');
   protected readonly dateFrom = signal('');
   protected readonly dateTo = signal('');
+  protected readonly pageIndex = signal(0);
+  protected readonly pageSize = 10;
   protected readonly skeletonRows = Array.from({ length: 8 });
 
   protected readonly typeFilters: { label: string; value: TypeFilter }[] = [
@@ -127,6 +130,11 @@ export class TransactionsPageComponent {
     });
   });
 
+  protected readonly paged = computed(() => {
+    const start = this.pageIndex() * this.pageSize;
+    return this.filtered().slice(start, start + this.pageSize);
+  });
+
   constructor() {
     const phone = this.session.phone();
     if (phone) {
@@ -141,10 +149,26 @@ export class TransactionsPageComponent {
     }
   }
 
+  protected setType(value: TypeFilter): void {
+    this.typeFilter.set(value);
+    this.pageIndex.set(0);
+  }
+
+  protected setDateFrom(value: string): void {
+    this.dateFrom.set(value);
+    this.pageIndex.set(0);
+  }
+
+  protected setDateTo(value: string): void {
+    this.dateTo.set(value);
+    this.pageIndex.set(0);
+  }
+
   protected reset(): void {
     this.typeFilter.set('ALL');
     this.dateFrom.set('');
     this.dateTo.set('');
+    this.pageIndex.set(0);
   }
 
   protected typeLabel(tx: Transaction): string {
