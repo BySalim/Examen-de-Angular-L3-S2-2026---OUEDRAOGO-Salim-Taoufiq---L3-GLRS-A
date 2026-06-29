@@ -64,25 +64,27 @@ import { PhonePipe } from '../../shared/pipes/phone.pipe';
 
     <!-- Liste -->
     <div class="card overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[640px] text-sm">
-          <thead>
-            <tr class="border-b border-hairline text-left text-xs uppercase tracking-wide text-content-subtle">
-              <th class="px-4 py-3 font-semibold">Code</th>
-              <th class="px-4 py-3 font-semibold">Téléphone</th>
-              <th class="px-4 py-3 font-semibold">Email</th>
-              <th class="px-4 py-3 text-right font-semibold">Solde</th>
-              <th class="px-4 py-3 text-right font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (loadingList()) {
-              @for (row of skeletonRows; track row) {
-                <tr class="border-b border-hairline last:border-0">
-                  <td class="px-4 py-3" colspan="5"><div class="skeleton h-5 w-full"></div></td>
-                </tr>
-              }
-            } @else {
+      @if (loadingList()) {
+        <div class="divide-y divide-hairline">
+          @for (row of skeletonRows; track row) {
+            <div class="px-4 py-3.5"><div class="skeleton h-6 w-full"></div></div>
+          }
+        </div>
+      } @else if ((page()?.content ?? []).length === 0) {
+        <p class="px-4 py-12 text-center text-sm text-content-muted">Aucun portefeuille.</p>
+      } @else {
+        <div class="hidden overflow-x-auto md:block">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-hairline text-left text-xs uppercase tracking-wide text-content-subtle">
+                <th class="px-4 py-3 font-semibold">Code</th>
+                <th class="px-4 py-3 font-semibold">Téléphone</th>
+                <th class="px-4 py-3 font-semibold">Email</th>
+                <th class="px-4 py-3 text-right font-semibold">Solde</th>
+                <th class="px-4 py-3 text-right font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
               @for (w of page()?.content ?? []; track w.id) {
                 <tr class="border-b border-hairline transition-colors last:border-0 hover:bg-surface-2/60">
                   <td class="px-4 py-3 font-medium text-content">{{ w.code }}</td>
@@ -96,13 +98,27 @@ import { PhonePipe } from '../../shared/pipes/phone.pipe';
                     </div>
                   </td>
                 </tr>
-              } @empty {
-                <tr><td colspan="5" class="px-4 py-12 text-center text-sm text-content-muted">Aucun portefeuille.</td></tr>
               }
-            }
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="divide-y divide-hairline md:hidden">
+          @for (w of page()?.content ?? []; track w.id) {
+            <div class="flex items-center gap-3 px-4 py-3.5">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-content">{{ w.code }}</p>
+                <p class="truncate text-xs text-content-subtle tabular">{{ w.phoneNumber | phone }}</p>
+              </div>
+              <p class="shrink-0 text-sm font-semibold tabular text-content">{{ w.balance | xof }}</p>
+              <div class="flex shrink-0 gap-1">
+                <button type="button" class="btn-ghost !px-2 !py-1.5" title="Dépôt" (click)="openDeposit(w)"><app-icon name="deposit" [size]="17" /></button>
+                <button type="button" class="btn-ghost !px-2 !py-1.5" title="Retrait" (click)="openWithdraw(w)"><app-icon name="withdraw" [size]="17" /></button>
+              </div>
+            </div>
+          }
+        </div>
+      }
 
       <div class="flex items-center justify-between border-t border-hairline px-4 py-3 text-sm">
         <span class="text-content-subtle">{{ page()?.totalElements ?? 0 }} portefeuille(s)</span>
