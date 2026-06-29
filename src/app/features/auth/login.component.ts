@@ -1,10 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { WalletApiService } from '../../core/api/wallet-api.service';
 import { SessionService } from '../../core/session/session.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { IconComponent } from '../../shared/ui/icon.component';
+
+const CLIENT_PIN = '1234';
 
 @Component({
   selector: 'app-login',
@@ -12,7 +14,6 @@ import { IconComponent } from '../../shared/ui/icon.component';
   imports: [ReactiveFormsModule, IconComponent],
   template: `
     <div class="grid min-h-screen lg:grid-cols-2">
-      <!-- Brand panel -->
       <div
         class="relative hidden overflow-hidden p-12 text-white lg:flex lg:flex-col lg:justify-between"
         style="background-image: linear-gradient(155deg, #0d9488 0%, #0f766e 42%, #0b3b39 100%);"
@@ -31,21 +32,15 @@ import { IconComponent } from '../../shared/ui/icon.component';
         </div>
 
         <div class="relative">
-          <h2 class="max-w-sm text-3xl font-semibold leading-tight tracking-tight">
-            Vos portefeuilles, en toute simplicité.
-          </h2>
-          <p class="mt-3 max-w-sm text-sm text-white/70">
-            Dépôts, retraits, transferts et paiements de factures réunis dans un espace clair et instantané.
-          </p>
+          <h2 class="max-w-sm text-3xl font-semibold leading-tight tracking-tight">Vos portefeuilles, en toute simplicité.</h2>
+          <p class="mt-3 max-w-sm text-sm text-white/70">Dépôts, retraits, transferts et paiements de factures réunis dans un espace clair et instantané.</p>
 
           <div class="mt-8 max-w-xs rounded-2xl border border-white/15 bg-white/10 p-5 shadow-lift backdrop-blur-md">
             <div class="flex items-center justify-between">
               <span class="text-xs font-medium uppercase tracking-wide text-white/60">Solde disponible</span>
               <span class="grid h-8 w-8 place-items-center rounded-lg bg-white/15"><app-icon name="trending-up" [size]="16" /></span>
             </div>
-            <p class="mt-3 text-3xl font-semibold tracking-tight tabular">
-              1 250 000 <span class="text-base font-medium text-white/60">XOF</span>
-            </p>
+            <p class="mt-3 text-3xl font-semibold tracking-tight tabular">1 250 000 <span class="text-base font-medium text-white/60">XOF</span></p>
             <div class="mt-4 flex items-center gap-2">
               <span class="rounded-md px-2 py-0.5 text-[11px] font-bold text-slate-900" style="background:rgb(245 158 11 / 0.95);">VISA</span>
               <span class="text-sm text-white/70 tabular">•••• 0003</span>
@@ -60,7 +55,6 @@ import { IconComponent } from '../../shared/ui/icon.component';
         </ul>
       </div>
 
-      <!-- Form panel -->
       <div class="relative flex items-center justify-center px-5 py-12">
         <button
           type="button"
@@ -81,57 +75,63 @@ import { IconComponent } from '../../shared/ui/icon.component';
           </div>
 
           <div class="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1">
-            <button
-              type="button"
-              class="flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-colors"
+            <button type="button" class="flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-colors"
               [class]="role() === 'client' ? 'bg-surface text-content shadow-soft' : 'text-content-muted hover:text-content'"
-              (click)="role.set('client')"
-            >
+              (click)="setRole('client')">
               <app-icon name="user" [size]="16" /> Client
             </button>
-            <button
-              type="button"
-              class="flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-colors"
+            <button type="button" class="flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-colors"
               [class]="role() === 'agent' ? 'bg-surface text-content shadow-soft' : 'text-content-muted hover:text-content'"
-              (click)="role.set('agent')"
-            >
+              (click)="setRole('agent')">
               <app-icon name="shield" [size]="16" /> Agent
             </button>
           </div>
 
+          @if (error()) {
+            <div class="mb-4 flex items-center gap-2 rounded-xl border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger">
+              <app-icon name="alert" [size]="16" /> {{ error() }}
+            </div>
+          }
+
           @if (role() === 'client') {
-            <form [formGroup]="form" (ngSubmit)="loginClient()" class="flex flex-col gap-4">
+            <form [formGroup]="clientForm" (ngSubmit)="loginClient()" class="flex flex-col gap-4">
               <div>
                 <label class="label" for="phone">Numéro de téléphone</label>
-                <input
-                  id="phone"
-                  type="tel"
-                  formControlName="phone"
-                  placeholder="+221770000003"
-                  class="input tabular"
-                  [class.input-error]="form.controls.phone.touched && form.controls.phone.invalid"
-                />
-                @if (form.controls.phone.touched && form.controls.phone.invalid) {
-                  <p class="field-error">Format attendu : +221 suivi de 9 chiffres.</p>
-                }
+                <input id="phone" type="tel" formControlName="phone" placeholder="+221770000003" class="input tabular"
+                  [class.input-error]="invalid(clientForm.controls.phone)" />
+                @if (invalid(clientForm.controls.phone)) { <p class="field-error">Format attendu : +221 suivi de 9 chiffres.</p> }
+              </div>
+              <div>
+                <label class="label" for="pin">Code PIN</label>
+                <input id="pin" type="password" inputmode="numeric" formControlName="pin" placeholder="••••" class="input tabular tracking-widest"
+                  [class.input-error]="invalid(clientForm.controls.pin)" />
+                @if (invalid(clientForm.controls.pin)) { <p class="field-error">PIN à 4 chiffres requis.</p> }
               </div>
               <button type="submit" class="btn-primary w-full" [disabled]="submitting()">
-                @if (submitting()) {
-                  <span class="h-4 w-4 animate-spin rounded-full border-2 border-primary-fg/40 border-t-primary-fg"></span>
-                }
+                @if (submitting()) { <span class="h-4 w-4 animate-spin rounded-full border-2 border-primary-fg/40 border-t-primary-fg"></span> }
                 Se connecter
               </button>
-              <p class="text-center text-xs text-content-subtle">Exemple de compte : +221770000003</p>
+              <p class="text-center text-xs text-content-subtle">Démo : +221770000003 · PIN 1234</p>
             </form>
           } @else {
-            <div class="flex flex-col gap-4">
-              <p class="text-sm text-content-muted">
-                Espace de gestion : listing des portefeuilles, création de compte, recherche, dépôts et retraits.
-              </p>
-              <button type="button" class="btn-primary w-full" (click)="continueAsAgent()">
-                <app-icon name="shield" [size]="18" /> Continuer comme agent
+            <form [formGroup]="agentForm" (ngSubmit)="loginAgent()" class="flex flex-col gap-4">
+              <div>
+                <label class="label" for="username">Identifiant</label>
+                <input id="username" type="text" formControlName="username" placeholder="agent" class="input"
+                  [class.input-error]="invalid(agentForm.controls.username)" />
+                @if (invalid(agentForm.controls.username)) { <p class="field-error">Identifiant requis.</p> }
+              </div>
+              <div>
+                <label class="label" for="password">Mot de passe</label>
+                <input id="password" type="password" formControlName="password" placeholder="••••••••" class="input"
+                  [class.input-error]="invalid(agentForm.controls.password)" />
+                @if (invalid(agentForm.controls.password)) { <p class="field-error">Mot de passe requis.</p> }
+              </div>
+              <button type="submit" class="btn-primary w-full">
+                <app-icon name="shield" [size]="18" /> Se connecter
               </button>
-            </div>
+              <p class="text-center text-xs text-content-subtle">Démo : agent · agent123</p>
+            </form>
           }
         </div>
       </div>
@@ -147,29 +147,56 @@ export class LoginComponent {
 
   protected readonly role = signal<'client' | 'agent'>('client');
   protected readonly submitting = signal(false);
+  protected readonly error = signal<string | null>(null);
 
-  protected readonly form = this.fb.nonNullable.group({
+  protected readonly clientForm = this.fb.nonNullable.group({
     phone: ['', [Validators.required, Validators.pattern(/^\+221\d{9}$/)]],
+    pin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
   });
 
+  protected readonly agentForm = this.fb.nonNullable.group({
+    username: ['', [Validators.required]],
+    password: ['', [Validators.required]],
+  });
+
+  protected invalid(control: AbstractControl): boolean {
+    return control.touched && control.invalid;
+  }
+
+  protected setRole(role: 'client' | 'agent'): void {
+    this.role.set(role);
+    this.error.set(null);
+  }
+
   protected loginClient(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
+    if (this.clientForm.invalid) {
+      this.clientForm.markAllAsTouched();
       return;
     }
-    const phone = this.form.getRawValue().phone;
+    const { phone, pin } = this.clientForm.getRawValue();
     this.submitting.set(true);
-    this.walletApi.getByPhone(phone).subscribe({
-      next: (wallet) => {
-        this.session.loginAsClient(phone, wallet.code, wallet.id);
+    this.error.set(null);
+    this.walletApi.findByPhone(phone).subscribe((wallet) => {
+      if (wallet && pin === CLIENT_PIN) {
+        this.session.loginClient(phone, wallet.code, wallet.id);
         this.router.navigate(['/dashboard']);
-      },
-      error: () => this.submitting.set(false),
+      } else {
+        this.error.set('Numéro ou code PIN invalide.');
+        this.submitting.set(false);
+      }
     });
   }
 
-  protected continueAsAgent(): void {
-    this.session.loginAsAgent();
-    this.router.navigate(['/admin/wallets']);
+  protected loginAgent(): void {
+    if (this.agentForm.invalid) {
+      this.agentForm.markAllAsTouched();
+      return;
+    }
+    const { username, password } = this.agentForm.getRawValue();
+    if (this.session.loginAgent(username, password)) {
+      this.router.navigate(['/admin/wallets']);
+    } else {
+      this.error.set('Identifiant ou mot de passe incorrect.');
+    }
   }
 }
