@@ -46,46 +46,57 @@ type TypeFilter = 'ALL' | TransactionType;
     </div>
 
     <div class="card overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[680px] text-sm">
-          <thead>
-            <tr class="border-b border-hairline text-left text-xs uppercase tracking-wide text-content-subtle">
-              <th class="px-4 py-3 font-semibold">Type</th>
-              <th class="px-4 py-3 font-semibold">Détail</th>
-              <th class="px-4 py-3 text-right font-semibold">Montant</th>
-              <th class="px-4 py-3 text-right font-semibold">Solde après</th>
-              <th class="px-4 py-3 text-right font-semibold">Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (loading()) {
-              @for (row of skeletonRows; track row) {
-                <tr class="border-b border-hairline last:border-0"><td colspan="5" class="px-4 py-3"><div class="skeleton h-5 w-full"></div></td></tr>
-              }
-            } @else {
+      @if (loading()) {
+        <div class="divide-y divide-hairline">
+          @for (row of skeletonRows; track row) {
+            <div class="px-4 py-3.5"><div class="skeleton h-6 w-full"></div></div>
+          }
+        </div>
+      } @else if (filtered().length === 0) {
+        <p class="px-4 py-12 text-center text-sm text-content-muted">Aucune transaction ne correspond aux filtres.</p>
+      } @else {
+        <div class="hidden overflow-x-auto md:block">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-hairline text-left text-xs uppercase tracking-wide text-content-subtle">
+                <th class="px-4 py-3 font-semibold">Type</th>
+                <th class="px-4 py-3 font-semibold">Détail</th>
+                <th class="px-4 py-3 text-right font-semibold">Montant</th>
+                <th class="px-4 py-3 text-right font-semibold">Solde après</th>
+                <th class="px-4 py-3 text-right font-semibold">Date</th>
+              </tr>
+            </thead>
+            <tbody>
               @for (tx of paged(); track tx.id) {
                 <tr class="border-b border-hairline transition-colors last:border-0 hover:bg-surface-2/60">
-                  <td class="px-4 py-3">
-                    <span class="chip" [class]="typeClass(tx.type)"><app-icon [name]="iconName(tx.type)" [size]="14" /> {{ typeLabel(tx) }}</span>
-                  </td>
+                  <td class="px-4 py-3"><span class="chip" [class]="typeClass(tx.type)"><app-icon [name]="iconName(tx.type)" [size]="14" /> {{ typeLabel(tx) }}</span></td>
                   <td class="px-4 py-3 text-content-muted">
                     <p class="text-content">{{ tx.description }}</p>
                     @if (tx.counterpartyPhone) { <p class="text-xs text-content-subtle tabular">{{ tx.counterpartyPhone | phone }}</p> }
                     @else if (tx.reference) { <p class="text-xs text-content-subtle tabular">{{ tx.reference }}</p> }
                   </td>
-                  <td class="px-4 py-3 text-right font-semibold tabular" [class.text-success]="tx.direction === 'CREDIT'" [class.text-content]="tx.direction === 'DEBIT'">
-                    {{ tx.direction === 'CREDIT' ? '+' : '−' }}{{ tx.amount | xof }}
-                  </td>
+                  <td class="px-4 py-3 text-right font-semibold tabular" [class.text-success]="tx.direction === 'CREDIT'" [class.text-content]="tx.direction === 'DEBIT'">{{ tx.direction === 'CREDIT' ? '+' : '−' }}{{ tx.amount | xof }}</td>
                   <td class="px-4 py-3 text-right tabular text-content-muted">{{ tx.balanceAfter | xof }}</td>
                   <td class="px-4 py-3 text-right tabular text-content-subtle">{{ tx.createdAt | date: 'dd/MM/yy' }}</td>
                 </tr>
-              } @empty {
-                <tr><td colspan="5" class="px-4 py-12 text-center text-sm text-content-muted">Aucune transaction ne correspond aux filtres.</td></tr>
               }
-            }
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="divide-y divide-hairline md:hidden">
+          @for (tx of paged(); track tx.id) {
+            <div class="flex items-center gap-3 px-4 py-3.5">
+              <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl" [class]="typeClass(tx.type)"><app-icon [name]="iconName(tx.type)" [size]="17" /></span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-content">{{ typeLabel(tx) }}</p>
+                <p class="truncate text-xs text-content-subtle">{{ tx.createdAt | date: 'dd/MM/yy' }}@if (tx.counterpartyPhone) { · {{ tx.counterpartyPhone | phone }} }</p>
+              </div>
+              <span class="shrink-0 text-sm font-semibold tabular" [class.text-success]="tx.direction === 'CREDIT'" [class.text-content]="tx.direction === 'DEBIT'">{{ tx.direction === 'CREDIT' ? '+' : '−' }}{{ tx.amount | xof }}</span>
+            </div>
+          }
+        </div>
+      }
       <app-pagination [length]="filtered().length" [index]="pageIndex()" [pageSize]="pageSize" (indexChange)="pageIndex.set($event)" />
     </div>
   `,
