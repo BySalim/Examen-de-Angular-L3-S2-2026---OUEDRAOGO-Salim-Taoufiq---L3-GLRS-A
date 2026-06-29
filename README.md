@@ -24,8 +24,11 @@ npm start        # ng serve sur http://localhost:4200
 Le fichier `proxy.conf.json` redirige `/api` vers `http://localhost:8080` : aucune configuration CORS n'est nécessaire côté back-end.
 
 ### Connexion
-- **Client** : choisir « Client » et saisir un numéro existant, ex. `+221770000003`.
-- **Agent** : choisir « Agent » puis « Continuer comme agent ».
+
+Session sécurisée par rôle : un token (style JWT, avec expiration) est émis à la connexion, attaché aux requêtes par un interceptor, et les routes sont protégées par des guards. L'API n'exposant pas d'authentification, la vérification des identifiants est faite côté front avec des comptes de démonstration.
+
+- **Client** : téléphone + code PIN, ex. `+221770000003` / `1234`.
+- **Agent** : identifiant + mot de passe, `agent` / `agent123`.
 
 ## Architecture
 

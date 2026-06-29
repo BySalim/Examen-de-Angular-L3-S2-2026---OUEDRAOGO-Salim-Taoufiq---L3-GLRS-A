@@ -40,6 +40,12 @@ export class WalletApiService {
     );
   }
 
+  findByPhone(phone: string): Observable<Wallet | null> {
+    return this.http.get<Wallet>(`${this.base}/${phone}`, { context: silent() }).pipe(
+      catchError(() => of(null)),
+    );
+  }
+
   getBalance(phone: string): Observable<number> {
     return this.http
       .get<BalanceResponse>(`${this.base}/${phone}/balance`)

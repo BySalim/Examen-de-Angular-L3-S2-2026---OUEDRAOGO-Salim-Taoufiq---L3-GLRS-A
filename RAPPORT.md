@@ -8,7 +8,7 @@
 
 **Communication avec le back-end.** Les services `WalletApiService` et `BillingApiService` encapsulent tous les appels HTTP via des URLs relatives `/api/...`. Un proxy de développement (`proxy.conf.json`) redirige vers `http://localhost:8080`, ce qui évite toute configuration CORS côté back-end. Les erreurs HTTP sont traitées par un interceptor unique qui affiche un toast contextuel (« Fonds insuffisants », « Service indisponible »…), et un second interceptor pilote un indicateur de chargement global.
 
-**Sécurité par rôle.** L'API ne fournissant pas d'authentification, une session est simulée (rôle Agent, ou Client identifié par son téléphone) et persistée en `localStorage`. Des **guards** fonctionnels protègent les routes selon le rôle.
+**Sécurité par rôle.** La connexion se fait par identifiants (agent : identifiant/mot de passe ; client : téléphone + PIN). Un **token** (structure JWT avec expiration) est émis, persisté et validé par le `SessionService` ; un **interceptor** l'attache à chaque requête API ; des **guards** d'authentification et de rôle protègent les routes. L'API n'exposant pas d'authentification, la vérification des identifiants est réalisée côté front avec des comptes de démonstration : le mécanisme (token, interceptor, guards, expiration) est complet et fonctionnel.
 
 **Design system.** Un thème maison (« Kóra ») bâti sur Tailwind CSS expose des tokens de couleurs en variables CSS, permettant une bascule clair/sombre instantanée. Les icônes et les graphiques (donut revenus/dépenses) sont réalisés en SVG sans dépendance externe, pour un rendu cohérent et léger.
 

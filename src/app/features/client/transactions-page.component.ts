@@ -4,6 +4,7 @@ import { WalletApiService } from '../../core/api/wallet-api.service';
 import { SessionService } from '../../core/session/session.service';
 import { Transaction, TransactionType } from '../../core/models/transaction.model';
 import { IconComponent } from '../../shared/ui/icon.component';
+import { PaginationComponent } from '../../shared/ui/pagination.component';
 import { XofPipe } from '../../shared/pipes/xof.pipe';
 import { PhonePipe } from '../../shared/pipes/phone.pipe';
 
@@ -12,7 +13,7 @@ type TypeFilter = 'ALL' | TransactionType;
 @Component({
   selector: 'app-transactions-page',
   standalone: true,
-  imports: [DatePipe, IconComponent, XofPipe, PhonePipe],
+  imports: [DatePipe, IconComponent, PaginationComponent, XofPipe, PhonePipe],
   template: `
     <header class="mb-6">
       <h1 class="text-xl font-semibold tracking-tight text-content">Transactions</h1>
@@ -25,17 +26,17 @@ type TypeFilter = 'ALL' | TransactionType;
           @for (t of typeFilters; track t.value) {
             <button type="button" class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
               [class]="typeFilter() === t.value ? 'bg-surface text-content shadow-soft' : 'text-content-muted'"
-              (click)="typeFilter.set(t.value)">{{ t.label }}</button>
+              (click)="setType(t.value)">{{ t.label }}</button>
           }
         </div>
         <div class="flex items-end gap-2">
           <div>
             <label class="label">Du</label>
-            <input type="date" class="input" [value]="dateFrom()" (change)="dateFrom.set($any($event.target).value)" />
+            <input type="date" class="input" [value]="dateFrom()" (change)="setDateFrom($any($event.target).value)" />
           </div>
           <div>
             <label class="label">Au</label>
-            <input type="date" class="input" [value]="dateTo()" (change)="dateTo.set($any($event.target).value)" />
+            <input type="date" class="input" [value]="dateTo()" (change)="setDateTo($any($event.target).value)" />
           </div>
           @if (dateFrom() || dateTo() || typeFilter() !== 'ALL') {
             <button type="button" class="btn-ghost" (click)="reset()">Réinitialiser</button>
@@ -45,47 +46,58 @@ type TypeFilter = 'ALL' | TransactionType;
     </div>
 
     <div class="card overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[680px] text-sm">
-          <thead>
-            <tr class="border-b border-hairline text-left text-xs uppercase tracking-wide text-content-subtle">
-              <th class="px-4 py-3 font-semibold">Type</th>
-              <th class="px-4 py-3 font-semibold">Détail</th>
-              <th class="px-4 py-3 text-right font-semibold">Montant</th>
-              <th class="px-4 py-3 text-right font-semibold">Solde après</th>
-              <th class="px-4 py-3 text-right font-semibold">Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (loading()) {
-              @for (row of skeletonRows; track row) {
-                <tr class="border-b border-hairline last:border-0"><td colspan="5" class="px-4 py-3"><div class="skeleton h-5 w-full"></div></td></tr>
-              }
-            } @else {
-              @for (tx of filtered(); track tx.id) {
+      @if (loading()) {
+        <div class="divide-y divide-hairline">
+          @for (row of skeletonRows; track row) {
+            <div class="px-4 py-3.5"><div class="skeleton h-6 w-full"></div></div>
+          }
+        </div>
+      } @else if (filtered().length === 0) {
+        <p class="px-4 py-12 text-center text-sm text-content-muted">Aucune transaction ne correspond aux filtres.</p>
+      } @else {
+        <div class="hidden overflow-x-auto md:block">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-hairline text-left text-xs uppercase tracking-wide text-content-subtle">
+                <th class="px-4 py-3 font-semibold">Type</th>
+                <th class="px-4 py-3 font-semibold">Détail</th>
+                <th class="px-4 py-3 text-right font-semibold">Montant</th>
+                <th class="px-4 py-3 text-right font-semibold">Solde après</th>
+                <th class="px-4 py-3 text-right font-semibold">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (tx of paged(); track tx.id) {
                 <tr class="border-b border-hairline transition-colors last:border-0 hover:bg-surface-2/60">
-                  <td class="px-4 py-3">
-                    <span class="chip" [class]="typeClass(tx.type)"><app-icon [name]="iconName(tx.type)" [size]="14" /> {{ typeLabel(tx) }}</span>
-                  </td>
+                  <td class="px-4 py-3"><span class="chip" [class]="typeClass(tx.type)"><app-icon [name]="iconName(tx.type)" [size]="14" /> {{ typeLabel(tx) }}</span></td>
                   <td class="px-4 py-3 text-content-muted">
                     <p class="text-content">{{ tx.description }}</p>
                     @if (tx.counterpartyPhone) { <p class="text-xs text-content-subtle tabular">{{ tx.counterpartyPhone | phone }}</p> }
                     @else if (tx.reference) { <p class="text-xs text-content-subtle tabular">{{ tx.reference }}</p> }
                   </td>
-                  <td class="px-4 py-3 text-right font-semibold tabular" [class.text-success]="tx.direction === 'CREDIT'" [class.text-content]="tx.direction === 'DEBIT'">
-                    {{ tx.direction === 'CREDIT' ? '+' : '−' }}{{ tx.amount | xof }}
-                  </td>
+                  <td class="px-4 py-3 text-right font-semibold tabular" [class.text-success]="tx.direction === 'CREDIT'" [class.text-content]="tx.direction === 'DEBIT'">{{ tx.direction === 'CREDIT' ? '+' : '−' }}{{ tx.amount | xof }}</td>
                   <td class="px-4 py-3 text-right tabular text-content-muted">{{ tx.balanceAfter | xof }}</td>
                   <td class="px-4 py-3 text-right tabular text-content-subtle">{{ tx.createdAt | date: 'dd/MM/yy' }}</td>
                 </tr>
-              } @empty {
-                <tr><td colspan="5" class="px-4 py-12 text-center text-sm text-content-muted">Aucune transaction ne correspond aux filtres.</td></tr>
               }
-            }
-          </tbody>
-        </table>
-      </div>
-      <div class="border-t border-hairline px-4 py-3 text-sm text-content-subtle">{{ filtered().length }} transaction(s)</div>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="divide-y divide-hairline md:hidden">
+          @for (tx of paged(); track tx.id) {
+            <div class="flex items-center gap-3 px-4 py-3.5">
+              <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl" [class]="typeClass(tx.type)"><app-icon [name]="iconName(tx.type)" [size]="17" /></span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-content">{{ typeLabel(tx) }}</p>
+                <p class="truncate text-xs text-content-subtle">{{ tx.createdAt | date: 'dd/MM/yy' }}@if (tx.counterpartyPhone) { · {{ tx.counterpartyPhone | phone }} }</p>
+              </div>
+              <span class="shrink-0 text-sm font-semibold tabular" [class.text-success]="tx.direction === 'CREDIT'" [class.text-content]="tx.direction === 'DEBIT'">{{ tx.direction === 'CREDIT' ? '+' : '−' }}{{ tx.amount | xof }}</span>
+            </div>
+          }
+        </div>
+      }
+      <app-pagination [length]="filtered().length" [index]="pageIndex()" [pageSize]="pageSize" (indexChange)="pageIndex.set($event)" />
     </div>
   `,
 })
@@ -98,6 +110,8 @@ export class TransactionsPageComponent {
   protected readonly typeFilter = signal<TypeFilter>('ALL');
   protected readonly dateFrom = signal('');
   protected readonly dateTo = signal('');
+  protected readonly pageIndex = signal(0);
+  protected readonly pageSize = 10;
   protected readonly skeletonRows = Array.from({ length: 8 });
 
   protected readonly typeFilters: { label: string; value: TypeFilter }[] = [
@@ -127,6 +141,11 @@ export class TransactionsPageComponent {
     });
   });
 
+  protected readonly paged = computed(() => {
+    const start = this.pageIndex() * this.pageSize;
+    return this.filtered().slice(start, start + this.pageSize);
+  });
+
   constructor() {
     const phone = this.session.phone();
     if (phone) {
@@ -141,10 +160,26 @@ export class TransactionsPageComponent {
     }
   }
 
+  protected setType(value: TypeFilter): void {
+    this.typeFilter.set(value);
+    this.pageIndex.set(0);
+  }
+
+  protected setDateFrom(value: string): void {
+    this.dateFrom.set(value);
+    this.pageIndex.set(0);
+  }
+
+  protected setDateTo(value: string): void {
+    this.dateTo.set(value);
+    this.pageIndex.set(0);
+  }
+
   protected reset(): void {
     this.typeFilter.set('ALL');
     this.dateFrom.set('');
     this.dateTo.set('');
+    this.pageIndex.set(0);
   }
 
   protected typeLabel(tx: Transaction): string {
