@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, catchError, map, of } from 'rxjs';
+import { silent } from '../interceptors/http-context';
 import { BalanceResponse, CreateWalletRequest, Page, Wallet } from '../models/wallet.model';
 import {
   DepositRequest,
@@ -30,6 +31,13 @@ export class WalletApiService {
 
   getByPhone(phone: string): Observable<Wallet> {
     return this.http.get<Wallet>(`${this.base}/${phone}`);
+  }
+
+  exists(phone: string): Observable<boolean> {
+    return this.http.get<Wallet>(`${this.base}/${phone}`, { context: silent() }).pipe(
+      map(() => true),
+      catchError(() => of(false)),
+    );
   }
 
   getBalance(phone: string): Observable<number> {
