@@ -6,6 +6,9 @@ import { PlaceholderComponent } from './shared/ui/placeholder.component';
 import { WalletsPageComponent } from './features/agent/wallets-page.component';
 import { DashboardPageComponent } from './features/client/dashboard-page.component';
 import { TransferPageComponent } from './features/client/transfer-page.component';
+import { BillsLayoutComponent } from './features/client/bills-layout.component';
+import { BillsCurrentComponent } from './features/client/bills-current.component';
+import { BillsHistoryComponent } from './features/client/bills-history.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -32,19 +35,12 @@ export const routes: Routes = [
       },
       {
         path: 'bills',
+        component: BillsLayoutComponent,
         canActivate: [roleGuard('client')],
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'current' },
-          {
-            path: 'current',
-            component: PlaceholderComponent,
-            data: { title: 'Factures du mois', icon: 'receipt', description: 'Consultez et payez vos factures impayées.' },
-          },
-          {
-            path: 'history',
-            component: PlaceholderComponent,
-            data: { title: 'Historique des paiements', icon: 'history', description: 'Vos paiements de factures passés.' },
-          },
+          { path: 'current', component: BillsCurrentComponent },
+          { path: 'history', component: BillsHistoryComponent },
         ],
       },
       {
