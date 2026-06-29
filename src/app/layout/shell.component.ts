@@ -25,10 +25,10 @@ interface NavItem {
         <div class="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm lg:hidden" (click)="drawerOpen.set(false)"></div>
       }
       <aside
-        class="fixed inset-y-0 left-0 z-40 w-[260px] -translate-x-full border-r border-hairline bg-surface transition-transform duration-200 lg:static lg:translate-x-0"
+        class="fixed inset-y-0 left-0 z-40 flex w-[260px] -translate-x-full flex-col border-r border-hairline bg-surface transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0"
         [class.translate-x-0]="drawerOpen()"
       >
-        <div class="flex h-16 items-center gap-2.5 px-5">
+        <div class="flex h-16 shrink-0 items-center gap-2.5 px-5">
           <span class="grid h-9 w-9 place-items-center rounded-xl text-white shadow-soft" style="background-image: linear-gradient(135deg, #0d9488, #0f766e);">
             <app-icon name="wallet" [size]="20" />
           </span>
@@ -38,7 +38,7 @@ interface NavItem {
           </div>
         </div>
 
-        <nav class="flex flex-col gap-1 px-3 py-2">
+        <nav class="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-2">
           <p class="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-content-subtle">Menu</p>
           @for (item of nav(); track item.path) {
             <a
@@ -54,7 +54,7 @@ interface NavItem {
           }
         </nav>
 
-        <div class="absolute inset-x-3 bottom-3">
+        <div class="shrink-0 px-3 pb-3 pt-2">
           <div class="flex items-center gap-3 rounded-xl border border-hairline px-3 py-2.5">
             <span class="grid h-8 w-8 place-items-center rounded-lg bg-surface-2 text-content-muted">
               <app-icon [name]="role() === 'agent' ? 'shield' : 'user'" [size]="17" />
