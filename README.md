@@ -30,6 +30,10 @@ Session sécurisée par rôle : un token (style JWT, avec expiration) est émis 
 - **Client** : téléphone + code PIN, ex. `+221770000003` / `1234`.
 - **Agent** : identifiant + mot de passe, `agent` / `agent123`.
 
+## Aperçu
+
+Une galerie de captures des interfaces et fonctionnalités est disponible dans [`captures/`](captures/README.md).
+
 ## Architecture
 
 ```
